@@ -2,37 +2,22 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Star, Bug, Lightbulb, MessageSquare, Trash2, ExternalLink } from "lucide-react";
+import { X, Send, Star, Bug, Lightbulb, MessageSquare, Trash2, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface FeedbackEntry {
-  id: string;
+  id: number;
   type: "bug" | "feature" | "general";
   message: string;
   rating: number;
-  createdAt: number;
+  created_at: string;
 }
-
-const STORAGE_KEY = "imagepro-feedback";
 
 const feedbackTypes = [
   { key: "bug" as const, label: "Bug", icon: Bug, color: "var(--error)" },
   { key: "feature" as const, label: "Feature", icon: Lightbulb, color: "var(--warning)" },
   { key: "general" as const, label: "General", icon: MessageSquare, color: "var(--info)" },
 ];
-
-function loadFeedback(): FeedbackEntry[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-
-function saveFeedback(entries: FeedbackEntry[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-}
 
 interface FeedbackPanelProps {
   isOpen: boolean;
@@ -45,40 +30,71 @@ export default function FeedbackPanel({ isOpen, onClose }: FeedbackPanelProps) {
   const [message, setMessage] = useState("");
   const [rating, setRating] = useState(0);
   const [tab, setTab] = useState<"write" | "view">("write");
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
+  // Fetch feedback when opening the View tab
   useEffect(() => {
-    setEntries(loadFeedback());
-  }, [isOpen]);
+    if (isOpen && tab === "view") {
+      fetchFeedback();
+    }
+  }, [isOpen, tab]);
 
-  const handleSubmit = () => {
+  const fetchFeedback = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/feedback");
+      if (res.ok) {
+        const data = await res.json();
+        setEntries(data.feedback || []);
+      }
+    } catch {
+      toast.error("Failed to load feedback");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
     if (!message.trim()) {
       toast.error("Please write a message");
       return;
     }
 
-    const entry: FeedbackEntry = {
-      id: Date.now().toString(36),
-      type,
-      message: message.trim(),
-      rating,
-      createdAt: Date.now(),
-    };
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, message: message.trim(), rating }),
+      });
 
-    const updated = [entry, ...entries];
-    setEntries(updated);
-    saveFeedback(updated);
-
-    setMessage("");
-    setRating(0);
-    setType("general");
-    toast.success("Feedback saved! Thank you.");
+      if (res.ok) {
+        setMessage("");
+        setRating(0);
+        setType("general");
+        toast.success("Feedback submitted! Thank you.");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to submit");
+      }
+    } catch {
+      toast.error("Network error — feedback not submitted");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    const updated = entries.filter((e) => e.id !== id);
-    setEntries(updated);
-    saveFeedback(updated);
-    toast.success("Feedback deleted");
+  const handleDelete = async (id: number) => {
+    try {
+      const res = await fetch(`/api/feedback?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setEntries((prev) => prev.filter((e) => e.id !== id));
+        toast.success("Feedback deleted");
+      }
+    } catch {
+      toast.error("Failed to delete");
+    }
   };
 
   const handleExport = () => {
@@ -133,7 +149,6 @@ export default function FeedbackPanel({ isOpen, onClose }: FeedbackPanelProps) {
             >
               <h2 className="text-lg font-semibold text-[var(--text-strong)]">Feedback</h2>
               <div className="flex items-center gap-2">
-                {/* Tabs */}
                 <div className="flex items-center glass-card-static overflow-hidden p-0.5 mr-2">
                   <button
                     onClick={() => setTab("write")}
@@ -227,11 +242,17 @@ export default function FeedbackPanel({ isOpen, onClose }: FeedbackPanelProps) {
                 <div className="flex gap-2">
                   <button
                     onClick={handleSubmit}
+                    disabled={submitting}
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium
-                      bg-[var(--accent)] text-black hover:bg-[var(--accent-hover)] transition-all"
+                      bg-[var(--accent)] text-black hover:bg-[var(--accent-hover)] transition-all
+                      disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Send className="w-4 h-4" />
-                    Save Feedback
+                    {submitting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                    {submitting ? "Submitting..." : "Submit"}
                   </button>
                   {message.trim() && (
                     <button
@@ -248,7 +269,12 @@ export default function FeedbackPanel({ isOpen, onClose }: FeedbackPanelProps) {
               </div>
             ) : (
               <div className="p-6 max-h-[60vh] overflow-y-auto">
-                {entries.length === 0 ? (
+                {loading ? (
+                  <div className="text-center py-12">
+                    <Loader2 className="w-6 h-6 mx-auto mb-3 animate-spin text-[var(--text-ghost)]" />
+                    <p className="text-sm text-[var(--text-muted)]">Loading feedback...</p>
+                  </div>
+                ) : entries.length === 0 ? (
                   <div className="text-center py-12">
                     <MessageSquare className="w-8 h-8 mx-auto mb-3 text-[var(--text-ghost)]" />
                     <p className="text-sm text-[var(--text-muted)]">No feedback yet</p>
@@ -259,10 +285,7 @@ export default function FeedbackPanel({ isOpen, onClose }: FeedbackPanelProps) {
                     {entries.map((entry) => {
                       const { Icon, color } = typeIcon(entry.type);
                       return (
-                        <div
-                          key={entry.id}
-                          className="glass-card-static p-3 group"
-                        >
+                        <div key={entry.id} className="glass-card-static p-3 group">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex items-center gap-2 mb-1.5">
                               <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color }} />
@@ -275,7 +298,7 @@ export default function FeedbackPanel({ isOpen, onClose }: FeedbackPanelProps) {
                                 </span>
                               )}
                               <span className="text-[10px] text-[var(--text-ghost)] ml-auto">
-                                {new Date(entry.createdAt).toLocaleDateString()}
+                                {new Date(entry.created_at).toLocaleDateString()}
                               </span>
                             </div>
                             <button
@@ -294,7 +317,7 @@ export default function FeedbackPanel({ isOpen, onClose }: FeedbackPanelProps) {
                   </div>
                 )}
 
-                {entries.length > 0 && (
+                {entries.length > 0 && !loading && (
                   <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--glass-border)" }}>
                     <button
                       onClick={handleExport}
