@@ -16,7 +16,7 @@ import NextAction from "@/components/NextAction";
 import BatchEditor from "@/components/BatchEditor";
 
 export default function Home() {
-  const { items, editingId } = useMediaStore();
+  const { items, editingId, sidebarCollapsed } = useMediaStore();
   const [calendarDate, setCalendarDate] = useState<string | null>(null);
   const hasMedia = items.length > 0;
 
@@ -32,7 +32,10 @@ export default function Home() {
       <Sidebar />
 
       {/* Main content area — offset by sidebar */}
-      <div className="pl-[60px] lg:pl-[220px] transition-all duration-300 relative z-10">
+      <div
+        className="transition-all duration-300 relative z-10"
+        style={{ paddingLeft: sidebarCollapsed ? 60 : 220 }}
+      >
         <Header />
 
         <main className="max-w-[1600px] mx-auto px-6 py-6" role="main">

@@ -21,6 +21,9 @@ interface MediaStore {
   sortDirection: SortDirection;
   viewMode: ViewMode;
 
+  // UI state
+  sidebarCollapsed: boolean;
+
   // Import state
   isImporting: boolean;
   importProgress: { processed: number; total: number } | null;
@@ -40,6 +43,9 @@ interface MediaStore {
   setSortField: (field: SortField) => void;
   toggleSortDirection: () => void;
   setViewMode: (mode: ViewMode) => void;
+
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  toggleSidebar: () => void;
 
   setImporting: (importing: boolean) => void;
   setImportProgress: (progress: { processed: number; total: number } | null) => void;
@@ -75,6 +81,8 @@ export const useMediaStore = create<MediaStore>()(
       sortField: "date",
       sortDirection: "desc",
       viewMode: "grid",
+
+      sidebarCollapsed: false,
 
       isImporting: false,
       importProgress: null,
@@ -161,6 +169,9 @@ export const useMediaStore = create<MediaStore>()(
           sortDirection: state.sortDirection === "asc" ? "desc" : "asc",
         })),
       setViewMode: (mode) => set({ viewMode: mode }),
+
+      setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
+      toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
       setImporting: (importing) => set({ isImporting: importing }),
       setImportProgress: (progress) => set({ importProgress: progress }),

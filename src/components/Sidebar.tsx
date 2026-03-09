@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Camera,
@@ -36,8 +36,9 @@ const navItems: {
 ];
 
 export default function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const collapsed = useMediaStore((s) => s.sidebarCollapsed);
+  const toggleSidebar = useMediaStore((s) => s.toggleSidebar);
   const activeFilter = useMediaStore((s) => s.activeFilter);
   const setFilter = useMediaStore((s) => s.setFilter);
   const total = useMediaStore((s) => s.items.length);
@@ -212,7 +213,7 @@ export default function Sidebar() {
 
         {/* Collapse toggle */}
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={toggleSidebar}
           className={`
             w-full flex items-center gap-2 rounded-lg transition-all duration-200
             text-[var(--text-faint)] hover:text-[var(--text-muted)] hover:bg-[var(--glass-bg-hover)]
