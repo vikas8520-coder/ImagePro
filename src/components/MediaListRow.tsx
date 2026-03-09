@@ -6,7 +6,10 @@ import {
   Image as ImageIcon,
   Video,
   Pencil,
+  GripVertical,
 } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { MediaItem } from "@/types/media";
 import { useMediaStore } from "@/store/mediaStore";
 import { formatFileSize } from "@/utils/mediaProcessing";
@@ -19,11 +22,29 @@ interface MediaListRowProps {
 function MediaListRow({ item, isSelected }: MediaListRowProps) {
   const { toggleSelection, setEditingId } = useMediaStore();
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
   return (
     <div
+      ref={setNodeRef}
+      style={style}
       onClick={() => toggleSelection(item.id)}
       className={`
-        group grid grid-cols-[auto_1fr_100px_100px_80px_80px_80px] gap-3 items-center
+        group grid grid-cols-[auto_auto_1fr_100px_100px_80px_80px_80px] gap-3 items-center
         px-3 py-2 rounded-xl cursor-pointer transition-all duration-200
         ${
           isSelected
@@ -33,6 +54,17 @@ function MediaListRow({ item, isSelected }: MediaListRowProps) {
       `}
       role="listitem"
     >
+      {/* Drag handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="w-5 flex items-center justify-center cursor-grab active:cursor-grabbing
+          text-[var(--text-ghost)] hover:text-[var(--text-muted)] transition-colors"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <GripVertical className="w-3.5 h-3.5" />
+      </div>
+
       {/* Checkbox */}
       <div
         className={`

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, Crop, Hash, Type, Tag, Download, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 import ReactCrop, { type Crop as CropType, type PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { useMediaStore } from "@/store/mediaStore";
@@ -147,6 +148,7 @@ export default function PostEditor() {
         }
       : undefined;
     updateItem(item.id, { caption, hashtags, postType, cropRatio, cropData });
+    toast.success("Post saved");
   };
 
   const handleMarkReady = () => {

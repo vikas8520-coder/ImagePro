@@ -12,6 +12,7 @@ import FilterBar from "@/components/FilterBar";
 import MediaGrid from "@/components/MediaGrid";
 import PostEditor from "@/components/PostEditor";
 import NextAction from "@/components/NextAction";
+import BatchEditor from "@/components/BatchEditor";
 
 export default function Home() {
   const { items, editingId } = useMediaStore();
@@ -121,6 +122,9 @@ export default function Home() {
 
       {/* Post editor slide-over */}
       {editingId && <PostEditor />}
+
+      {/* Batch editor modal */}
+      <BatchEditor />
     </div>
   );
 }

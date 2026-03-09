@@ -1,3 +1,4 @@
+import JSZip from "jszip";
 import { CropData, MediaItem } from "@/types/media";
 
 export function cropImageToBlob(
@@ -143,4 +144,46 @@ export function cropImageToCanvas(item: MediaItem): Promise<Blob | null> {
     img.onerror = () => resolve(null);
     img.src = item.objectUrl!;
   });
+}
+
+export async function exportAsZip(items: MediaItem[]) {
+  const zip = new JSZip();
+
+  for (const item of items) {
+    if (!item.objectUrl) continue;
+
+    if (item.cropData) {
+      const blob = await cropImageToCanvas(item);
+      if (blob) {
+        const baseName = item.name.replace(/\.[^.]+$/, "");
+        zip.file(`${baseName}-cropped.jpg`, blob);
+      }
+    } else {
+      // Fetch original blob from objectUrl
+      const resp = await fetch(item.objectUrl);
+      const blob = await resp.blob();
+      zip.file(item.name, blob);
+    }
+  }
+
+  // Add metadata JSON
+  const metadata = items.map((item) => ({
+    filename: item.name,
+    type: item.type,
+    orientation: item.orientation,
+    dimensions: `${item.width}x${item.height}`,
+    postType: item.postType || "unset",
+    cropRatio: item.cropRatio || "original",
+    caption: item.caption || "",
+    hashtags: item.hashtags || "",
+  }));
+  zip.file("metadata.json", JSON.stringify(metadata, null, 2));
+
+  const zipBlob = await zip.generateAsync({ type: "blob" });
+  const url = URL.createObjectURL(zipBlob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `imagepro-export-${new Date().toISOString().slice(0, 10)}.zip`;
+  a.click();
+  URL.revokeObjectURL(url);
 }

@@ -10,7 +10,10 @@ import {
   RectangleHorizontal,
   Square,
   Pencil,
+  GripVertical,
 } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { MediaItem } from "@/types/media";
 import { useMediaStore } from "@/store/mediaStore";
 import { formatFileSize } from "@/utils/mediaProcessing";
@@ -30,8 +33,27 @@ function MediaCard({ item, isSelected }: MediaCardProps) {
   const { toggleSelection, setEditingId } = useMediaStore();
   const OrientIcon = orientationIcon[item.orientation];
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    borderRadius: "var(--glass-radius)",
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
   return (
     <motion.div
+      ref={setNodeRef}
+      style={style}
       layout
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -43,7 +65,6 @@ function MediaCard({ item, isSelected }: MediaCardProps) {
         ${isSelected ? "!border-[var(--accent)] !bg-[var(--accent-ghost)]" : ""}
         ${item.isReady && !isSelected ? "!border-[var(--success)] !bg-[var(--success-muted)]" : ""}
       `}
-      style={{ borderRadius: "var(--glass-radius)" }}
       onClick={() => toggleSelection(item.id)}
     >
       {/* Thumbnail */}
@@ -57,6 +78,18 @@ function MediaCard({ item, isSelected }: MediaCardProps) {
 
         {/* Hover overlay */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-200" />
+
+        {/* Drag handle */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute top-2.5 left-10 w-6 h-6 rounded-md flex items-center justify-center
+            opacity-0 group-hover:opacity-100 transition-all cursor-grab active:cursor-grabbing
+            bg-black/30 backdrop-blur-sm"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <GripVertical className="w-3.5 h-3.5 text-white/80" />
+        </div>
 
         {/* Selection checkbox */}
         <div

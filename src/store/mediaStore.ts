@@ -47,9 +47,11 @@ interface MediaStore {
   setImportProgress: (progress: { processed: number; total: number } | null) => void;
 
   updateItem: (id: string, updates: Partial<MediaItem>) => void;
+  batchUpdateItems: (ids: string[], updates: Partial<MediaItem>) => void;
   markReady: (id: string) => void;
   unmarkReady: (id: string) => void;
   batchMarkReady: (ids: string[]) => void;
+  reorderItems: (activeId: string, overId: string) => void;
 
   // Computed
   getFilteredItems: () => MediaItem[];
@@ -172,6 +174,16 @@ export const useMediaStore = create<MediaStore>()(
           ),
         })),
 
+      batchUpdateItems: (ids, updates) =>
+        set((state) => {
+          const idSet = new Set(ids);
+          return {
+            items: state.items.map((item) =>
+              idSet.has(item.id) ? { ...item, ...updates } : item
+            ),
+          };
+        }),
+
       markReady: (id) =>
         set((state) => ({
           items: state.items.map((item) =>
@@ -194,6 +206,17 @@ export const useMediaStore = create<MediaStore>()(
               idSet.has(item.id) ? { ...item, isReady: true } : item
             ),
           };
+        }),
+
+      reorderItems: (activeId, overId) =>
+        set((state) => {
+          const oldIndex = state.items.findIndex((i) => i.id === activeId);
+          const newIndex = state.items.findIndex((i) => i.id === overId);
+          if (oldIndex === -1 || newIndex === -1) return state;
+          const newItems = [...state.items];
+          const [moved] = newItems.splice(oldIndex, 1);
+          newItems.splice(newIndex, 0, moved);
+          return { items: newItems };
         }),
 
       getFilteredItems: () => {

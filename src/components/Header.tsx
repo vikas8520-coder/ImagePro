@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Download,
@@ -9,10 +9,12 @@ import {
   XCircle,
   Plus,
   Search,
+  Pencil,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useMediaStore } from "@/store/mediaStore";
 import { formatFileSize, processFiles } from "@/utils/mediaProcessing";
-import { batchDownloadCropped } from "@/utils/cropAndDownload";
+import { exportAsZip } from "@/utils/cropAndDownload";
 
 export default function Header() {
   const {
@@ -29,6 +31,7 @@ export default function Header() {
   } = useMediaStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const stats = getStats();
   const hasSelection = selectedIds.size > 0;
   const hasMedia = items.length > 0;
@@ -37,32 +40,17 @@ export default function Header() {
     const readyItems = getReadyItems();
     if (readyItems.length === 0) return;
 
-    // Download cropped/original images
-    const downloadable = readyItems.filter((i) => i.objectUrl);
-    if (downloadable.length > 0) {
-      await batchDownloadCropped(downloadable);
-    }
+    setIsExporting(true);
+    const toastId = toast.loading(`Preparing ${readyItems.length} files for export...`);
 
-    // Also export JSON metadata
-    const exportData = readyItems.map((item) => ({
-      filename: item.name,
-      type: item.type,
-      orientation: item.orientation,
-      dimensions: `${item.width}x${item.height}`,
-      postType: item.postType || "unset",
-      cropRatio: item.cropRatio || "original",
-      caption: item.caption || "",
-      hashtags: item.hashtags || "",
-    }));
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `imagepro-export-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      await exportAsZip(readyItems);
+      toast.success(`Exported ${readyItems.length} files as ZIP`, { id: toastId });
+    } catch (err) {
+      toast.error("Export failed. Please try again.", { id: toastId });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleAddMore = async (files: FileList | null) => {
@@ -76,6 +64,20 @@ export default function Header() {
     addItems(newItems);
     setImporting(false);
     setImportProgress(null);
+    toast.success(`Imported ${newItems.length} files`);
+  };
+
+  const handleBatchDelete = () => {
+    const count = selectedIds.size;
+    removeItems(Array.from(selectedIds));
+    clearSelection();
+    toast.success(`Removed ${count} items`);
+  };
+
+  const handleBatchReady = () => {
+    const ids = Array.from(selectedIds);
+    batchMarkReady(ids);
+    toast.success(`Marked ${ids.length} items as ready`);
   };
 
   return (
@@ -156,7 +158,17 @@ export default function Header() {
                   {selectedIds.size} selected
                 </span>
                 <button
-                  onClick={() => batchMarkReady(Array.from(selectedIds))}
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent("open-batch-editor"));
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
+                    bg-[var(--accent-muted)] text-[var(--accent)] hover:brightness-110 transition-all"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  Batch Edit
+                </button>
+                <button
+                  onClick={handleBatchReady}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
                     bg-[var(--success-muted)] text-[var(--success)] hover:brightness-110 transition-all"
                 >
@@ -164,10 +176,7 @@ export default function Header() {
                   Mark Ready
                 </button>
                 <button
-                  onClick={() => {
-                    removeItems(Array.from(selectedIds));
-                    clearSelection();
-                  }}
+                  onClick={handleBatchDelete}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
                     bg-[var(--error-muted)] text-[var(--error)] hover:brightness-110 transition-all"
                 >
@@ -212,11 +221,13 @@ export default function Header() {
           {stats.ready > 0 && (
             <button
               onClick={handleExport}
+              disabled={isExporting}
               className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold
-                bg-[var(--accent)] text-black hover:bg-[var(--accent-hover)] transition-all"
+                bg-[var(--accent)] text-black hover:bg-[var(--accent-hover)] transition-all
+                disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Download className="w-3.5 h-3.5" />
-              Export ({stats.ready})
+              <Download className={`w-3.5 h-3.5 ${isExporting ? "animate-bounce" : ""}`} />
+              {isExporting ? "Exporting..." : `Export ZIP (${stats.ready})`}
             </button>
           )}
         </div>
