@@ -1,0 +1,331 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════
+   A1: DESIGN TOKENS — CSS Custom Properties
+   Near-black base (#0A0A0A not pure black)
+   6 semantic text levels: strong → ghost
+   ═══════════════════════════════════════════════════════ */
+:root {
+  /* Base surfaces */
+  --bg-base: #0A0A0A;
+  --bg-raised: #111113;
+  --bg-overlay: #18181B;
+  --bg-elevated: #1F1F23;
+
+  /* Text hierarchy — 6 semantic levels */
+  --text-strong: #F4F4F5;
+  --text-default: #E9ECF1;
+  --text-secondary: #A1A1AA;
+  --text-muted: #71717A;
+  --text-faint: #52525B;
+  --text-ghost: #3F3F46;
+
+  /* Accent — Jade Chrome */
+  --accent: #5EA387;
+  --accent-hover: #4E9377;
+  --accent-muted: rgba(94, 163, 135, 0.15);
+  --accent-ghost: rgba(94, 163, 135, 0.06);
+
+  /* Status colors */
+  --success: #10B981;
+  --success-muted: rgba(16, 185, 129, 0.15);
+  --warning: #F59E0B;
+  --warning-muted: rgba(245, 158, 11, 0.15);
+  --error: #EF4444;
+  --error-muted: rgba(239, 68, 68, 0.15);
+  --info: #3B82F6;
+  --info-muted: rgba(59, 130, 246, 0.15);
+  --purple: #8B5CF6;
+  --purple-muted: rgba(139, 92, 246, 0.15);
+
+  /* A2: Glassmorphic tokens */
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-hover: rgba(255, 255, 255, 0.10);
+  --glass-bg-active: rgba(255, 255, 255, 0.14);
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-border-hover: rgba(255, 255, 255, 0.16);
+  --glass-catch: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --glass-blur: blur(16px);
+  --glass-radius: 14px;
+
+  /* Focus ring (A7) */
+  --focus-ring: #5EA387;
+
+  /* Spacing scale */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+
+  /* Transitions */
+  --ease-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+
+  /* Fonts */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ═══════════════════════════════════════════════════════
+   LIGHT MODE TOKENS
+   ═══════════════════════════════════════════════════════ */
+[data-theme="light"] {
+  /* Base surfaces */
+  --bg-base: #FAFAFA;
+  --bg-raised: #FFFFFF;
+  --bg-overlay: #F4F4F5;
+  --bg-elevated: #E4E4E7;
+
+  /* Text hierarchy — 6 semantic levels */
+  --text-strong: #09090B;
+  --text-default: #18181B;
+  --text-secondary: #3F3F46;
+  --text-muted: #71717A;
+  --text-faint: #A1A1AA;
+  --text-ghost: #D4D4D8;
+
+  /* Accent — deeper jade for light bg legibility */
+  --accent: #3E8367;
+  --accent-hover: #2E7357;
+  --accent-muted: rgba(62, 131, 103, 0.12);
+  --accent-ghost: rgba(62, 131, 103, 0.05);
+
+  /* Status colors — slightly deeper for light bg */
+  --success: #059669;
+  --success-muted: rgba(5, 150, 105, 0.10);
+  --warning: #D97706;
+  --warning-muted: rgba(217, 119, 6, 0.10);
+  --error: #DC2626;
+  --error-muted: rgba(220, 38, 38, 0.10);
+  --info: #2563EB;
+  --info-muted: rgba(37, 99, 235, 0.10);
+  --purple: #7C3AED;
+  --purple-muted: rgba(124, 58, 237, 0.10);
+
+  /* Glassmorphic tokens — inverted for light */
+  --glass-bg: rgba(255, 255, 255, 0.60);
+  --glass-bg-hover: rgba(255, 255, 255, 0.80);
+  --glass-bg-active: rgba(255, 255, 255, 0.90);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-border-hover: rgba(0, 0, 0, 0.12);
+  --glass-catch: inset 0 1px 0 rgba(255, 255, 255, 0.80);
+  --glass-blur: blur(16px);
+
+  /* Focus ring */
+  --focus-ring: #3E8367;
+
+  /* Surface overlays */
+  --sidebar-bg: rgba(250, 250, 250, 0.90);
+  --header-bg: rgba(250, 250, 250, 0.85);
+  --panel-bg: rgba(250, 250, 250, 0.78);
+  --panel-header-bg: rgba(250, 250, 250, 0.72);
+  --badge-bg: rgba(0, 0, 0, 0.05);
+  --kbd-bg: rgba(0, 0, 0, 0.06);
+}
+
+/* Dark mode surface overlay tokens (default) */
+:root {
+  --sidebar-bg: rgba(10, 10, 10, 0.85);
+  --header-bg: rgba(10, 10, 10, 0.80);
+  --panel-bg: rgba(10, 10, 10, 0.75);
+  --panel-header-bg: rgba(10, 10, 10, 0.70);
+  --badge-bg: rgba(255, 255, 255, 0.06);
+  --kbd-bg: rgba(255, 255, 255, 0.06);
+}
+
+@theme inline {
+  --color-background: var(--bg-base);
+  --color-foreground: var(--text-default);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ═══════════════════════════════════════════════════════
+   BASE STYLES
+   ═══════════════════════════════════════════════════════ */
+body {
+  background: var(--bg-base);
+  color: var(--text-default);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+}
+
+::selection {
+  background: rgba(94, 163, 135, 0.25);
+  color: var(--text-strong);
+}
+
+/* ═══════════════════════════════════════════════════════
+   A2: GLASSMORPHIC CARD SYSTEM
+   ═══════════════════════════════════════════════════════ */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-catch);
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.glass-card:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-hover);
+  transform: translateY(-2px);
+}
+
+.glass-card-static {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-catch);
+}
+
+.glass-surface {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+}
+
+/* ═══════════════════════════════════════════════════════
+   B1: AMBIENT BACKGROUND ORBS
+   ═══════════════════════════════════════════════════════ */
+.ambient-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  transition: all 3s var(--ease-out);
+}
+
+/* Phase: Import — Cyan/Blue discovery */
+.ambient-import .ambient-orb-1 {
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.12), transparent 70%);
+}
+.ambient-import .ambient-orb-2 {
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.08), transparent 70%);
+}
+
+/* Phase: Curate — Jade/Teal productive */
+.ambient-curate .ambient-orb-1 {
+  background: radial-gradient(circle, rgba(94, 163, 135, 0.12), transparent 70%);
+}
+.ambient-curate .ambient-orb-2 {
+  background: radial-gradient(circle, rgba(78, 147, 119, 0.08), transparent 70%);
+}
+
+/* Phase: Ready — Emerald/Green success */
+.ambient-ready .ambient-orb-1 {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.12), transparent 70%);
+}
+.ambient-ready .ambient-orb-2 {
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.08), transparent 70%);
+}
+
+/* Phase: Empty — Subtle violet */
+.ambient-empty .ambient-orb-1 {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.08), transparent 70%);
+}
+.ambient-empty .ambient-orb-2 {
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.05), transparent 70%);
+}
+
+/* Light mode ambient orbs — softer, warmer */
+[data-theme="light"] .ambient-import .ambient-orb-1 {
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.08), transparent 70%);
+}
+[data-theme="light"] .ambient-import .ambient-orb-2 {
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.05), transparent 70%);
+}
+[data-theme="light"] .ambient-curate .ambient-orb-1 {
+  background: radial-gradient(circle, rgba(94, 163, 135, 0.08), transparent 70%);
+}
+[data-theme="light"] .ambient-curate .ambient-orb-2 {
+  background: radial-gradient(circle, rgba(78, 147, 119, 0.05), transparent 70%);
+}
+[data-theme="light"] .ambient-ready .ambient-orb-1 {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.08), transparent 70%);
+}
+[data-theme="light"] .ambient-ready .ambient-orb-2 {
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.05), transparent 70%);
+}
+[data-theme="light"] .ambient-empty .ambient-orb-1 {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.06), transparent 70%);
+}
+[data-theme="light"] .ambient-empty .ambient-orb-2 {
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.04), transparent 70%);
+}
+
+/* Light mode selection */
+[data-theme="light"] ::selection {
+  background: rgba(62, 131, 103, 0.20);
+  color: var(--text-strong);
+}
+
+/* ═══════════════════════════════════════════════════════
+   A6: SKELETON LOADING
+   ═══════════════════════════════════════════════════════ */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-raised) 25%,
+    var(--bg-elevated) 50%,
+    var(--bg-raised) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   A7: FOCUS RINGS & ACCESSIBILITY
+   ═══════════════════════════════════════════════════════ */
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .ambient-orb {
+    display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   SCROLLBAR
+   ═══════════════════════════════════════════════════════ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bg-elevated);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-ghost);
+}
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
