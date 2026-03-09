@@ -1,4 +1,4 @@
-// AI client with fallback chain: Ollama → Gemini Flash
+// AI client with fallback chain: Gemini Flash → Ollama
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3";
@@ -52,18 +52,18 @@ async function callGemini(prompt: string, system?: string): Promise<AIResponse> 
 }
 
 export async function aiGenerate(prompt: string, system?: string): Promise<AIResponse> {
-  // Try Ollama first
-  try {
-    return await callOllama(prompt, system);
-  } catch (e) {
-    console.log("[AI] Ollama failed, falling back to Gemini:", (e as Error).message);
-  }
-
-  // Fallback to Gemini
+  // Try Gemini first (works on Vercel + free tier)
   try {
     return await callGemini(prompt, system);
   } catch (e) {
-    console.log("[AI] Gemini failed:", (e as Error).message);
+    console.log("[AI] Gemini failed, falling back to Ollama:", (e as Error).message);
+  }
+
+  // Fallback to Ollama (local dev)
+  try {
+    return await callOllama(prompt, system);
+  } catch (e) {
+    console.log("[AI] Ollama failed:", (e as Error).message);
   }
 
   throw new Error("All AI providers failed");
