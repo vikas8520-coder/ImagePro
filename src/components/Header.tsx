@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useMediaStore } from "@/store/mediaStore";
 import { formatFileSize, processFiles } from "@/utils/mediaProcessing";
+import { batchDownloadCropped } from "@/utils/cropAndDownload";
 
 export default function Header() {
   const {
@@ -32,9 +33,17 @@ export default function Header() {
   const hasSelection = selectedIds.size > 0;
   const hasMedia = items.length > 0;
 
-  const handleExport = () => {
+  const handleExport = async () => {
     const readyItems = getReadyItems();
     if (readyItems.length === 0) return;
+
+    // Download cropped/original images
+    const downloadable = readyItems.filter((i) => i.objectUrl);
+    if (downloadable.length > 0) {
+      await batchDownloadCropped(downloadable);
+    }
+
+    // Also export JSON metadata
     const exportData = readyItems.map((item) => ({
       filename: item.name,
       type: item.type,

@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, Crop, Hash, Type, Tag } from "lucide-react";
+import { X, Check, Crop, Hash, Type, Tag, Download, AlertTriangle } from "lucide-react";
+import ReactCrop, { type Crop as CropType, type PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
 import { useMediaStore } from "@/store/mediaStore";
 import { CropRatio, PostType } from "@/types/media";
+import { cropImageToCanvas } from "@/utils/cropAndDownload";
 
 const cropRatios: { key: CropRatio; label: string; w: number; h: number }[] = [
   { key: "1:1", label: "1:1", w: 1, h: 1 },
@@ -33,6 +36,9 @@ export default function PostEditor() {
   const [hashtags, setHashtags] = useState("");
   const [postType, setPostType] = useState<PostType | undefined>();
   const [cropRatio, setCropRatio] = useState<CropRatio | undefined>();
+  const [crop, setCrop] = useState<CropType>();
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
+  const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     if (item) {
@@ -40,6 +46,19 @@ export default function PostEditor() {
       setHashtags(item.hashtags || "");
       setPostType(item.postType);
       setCropRatio(item.cropRatio);
+      // Restore saved crop data
+      if (item.cropData) {
+        setCrop({
+          x: item.cropData.x,
+          y: item.cropData.y,
+          width: item.cropData.width,
+          height: item.cropData.height,
+          unit: item.cropData.unit,
+        });
+      } else {
+        setCrop(undefined);
+      }
+      setCompletedCrop(undefined);
     }
   }, [item]);
 
@@ -53,7 +72,55 @@ export default function PostEditor() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [editingId, caption, hashtags, postType, cropRatio]);
+  }, [editingId, caption, hashtags, postType, cropRatio, completedCrop]);
+
+  const onImageLoad = useCallback(
+    (e: React.SyntheticEvent<HTMLImageElement>) => {
+      const { naturalWidth, naturalHeight } = e.currentTarget;
+      if (cropRatio) {
+        const ratio = cropRatios.find((r) => r.key === cropRatio);
+        if (ratio) {
+          const newCrop = centerCrop(
+            makeAspectCrop(
+              { unit: "%", width: 90 },
+              ratio.w / ratio.h,
+              naturalWidth,
+              naturalHeight
+            ),
+            naturalWidth,
+            naturalHeight
+          );
+          setCrop(newCrop);
+        }
+      }
+    },
+    [cropRatio]
+  );
+
+  // When crop ratio changes, recalculate crop
+  useEffect(() => {
+    if (!imgRef.current || !cropRatio) {
+      if (!cropRatio) setCrop(undefined);
+      return;
+    }
+    const { naturalWidth, naturalHeight } = imgRef.current;
+    if (!naturalWidth || !naturalHeight) return;
+
+    const ratio = cropRatios.find((r) => r.key === cropRatio);
+    if (ratio) {
+      const newCrop = centerCrop(
+        makeAspectCrop(
+          { unit: "%", width: 90 },
+          ratio.w / ratio.h,
+          naturalWidth,
+          naturalHeight
+        ),
+        naturalWidth,
+        naturalHeight
+      );
+      setCrop(newCrop);
+    }
+  }, [cropRatio]);
 
   if (!item) return null;
 
@@ -62,7 +129,24 @@ export default function PostEditor() {
     : 0;
 
   const save = () => {
-    updateItem(item.id, { caption, hashtags, postType, cropRatio });
+    const cropData = completedCrop
+      ? {
+          x: completedCrop.x,
+          y: completedCrop.y,
+          width: completedCrop.width,
+          height: completedCrop.height,
+          unit: "%" as const,
+        }
+      : crop
+      ? {
+          x: crop.x,
+          y: crop.y,
+          width: crop.width,
+          height: crop.height,
+          unit: crop.unit,
+        }
+      : undefined;
+    updateItem(item.id, { caption, hashtags, postType, cropRatio, cropData });
   };
 
   const handleMarkReady = () => {
@@ -71,7 +155,45 @@ export default function PostEditor() {
     else markReady(item.id);
   };
 
+  const handleDownload = async () => {
+    save();
+    if (!item.objectUrl) return;
+
+    if (completedCrop || crop) {
+      const cropData = completedCrop || crop;
+      if (cropData) {
+        // Update item with current crop before downloading
+        const updatedItem = {
+          ...item,
+          cropData: {
+            x: cropData.x,
+            y: cropData.y,
+            width: cropData.width,
+            height: cropData.height,
+            unit: cropData.unit as "px" | "%",
+          },
+        };
+        const blob = await cropImageToCanvas(updatedItem);
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${item.name.replace(/\.[^.]+$/, "")}-cropped.jpg`;
+          a.click();
+          URL.revokeObjectURL(url);
+          return;
+        }
+      }
+    }
+    // No crop — download original
+    const a = document.createElement("a");
+    a.href = item.objectUrl;
+    a.download = item.name;
+    a.click();
+  };
+
   const selectedRatio = cropRatios.find((r) => r.key === cropRatio);
+  const hasFile = !!item.objectUrl && !item.needsReimport;
 
   return (
     <AnimatePresence>
@@ -127,71 +249,94 @@ export default function PostEditor() {
           </div>
 
           <div className="p-6 space-y-6">
-            {/* Preview */}
+            {/* Preview with crop */}
             <div
               className="relative rounded-2xl overflow-hidden flex items-center justify-center"
               style={{ background: "var(--bg-raised)" }}
             >
-              <div
-                className="relative w-full"
-                style={{
-                  aspectRatio: selectedRatio
-                    ? `${selectedRatio.w}/${selectedRatio.h}`
-                    : `${item.width}/${item.height}`,
-                  maxHeight: "400px",
-                }}
-              >
-                <img
-                  src={item.objectUrl}
-                  alt={item.name}
-                  className="w-full h-full object-cover"
-                />
-                {selectedRatio && (
-                  <div className="absolute inset-0 border-2 border-[var(--accent)]/50 rounded pointer-events-none">
-                    <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
-                      {Array.from({ length: 9 }).map((_, i) => (
-                        <div key={i} className="border border-[var(--accent)]/15" />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              {hasFile ? (
+                <div className="relative w-full flex items-center justify-center" style={{ maxHeight: "400px" }}>
+                  {item.type === "photo" ? (
+                    <ReactCrop
+                      crop={crop}
+                      onChange={(c) => setCrop(c)}
+                      onComplete={(c) => setCompletedCrop(c)}
+                      aspect={selectedRatio ? selectedRatio.w / selectedRatio.h : undefined}
+                    >
+                      <img
+                        ref={imgRef}
+                        src={item.objectUrl}
+                        alt={item.name}
+                        onLoad={onImageLoad}
+                        style={{ maxHeight: "400px", width: "auto" }}
+                      />
+                    </ReactCrop>
+                  ) : (
+                    <video
+                      src={item.objectUrl}
+                      className="max-h-[400px] w-auto"
+                      controls
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="p-12 text-center">
+                  <AlertTriangle className="w-8 h-8 mx-auto mb-3 text-[var(--warning)]" />
+                  <p className="text-sm text-[var(--text-muted)]">
+                    Re-import this file to crop and download
+                  </p>
+                  <img
+                    src={item.thumbnailUrl}
+                    alt={item.name}
+                    className="mt-4 mx-auto rounded-lg opacity-60"
+                    style={{ maxHeight: "200px" }}
+                  />
+                </div>
+              )}
             </div>
 
             {/* File info */}
             <div className="flex items-center gap-3 text-xs text-[var(--text-faint)]">
               <span>{item.name}</span>
               <span className="w-1 h-1 rounded-full" style={{ background: "var(--bg-elevated)" }} />
-              <span>{item.width}×{item.height}</span>
+              <span>{item.width}x{item.height}</span>
               <span className="w-1 h-1 rounded-full" style={{ background: "var(--bg-elevated)" }} />
               <span className="capitalize">{item.orientation}</span>
+              {item.needsReimport && (
+                <>
+                  <span className="w-1 h-1 rounded-full" style={{ background: "var(--bg-elevated)" }} />
+                  <span className="text-[var(--warning)]">Needs re-import</span>
+                </>
+              )}
             </div>
 
             {/* Crop ratio */}
-            <div className="glass-card-static p-4">
-              <label className="flex items-center gap-2 text-sm font-medium text-[var(--text-default)] mb-3">
-                <Crop className="w-4 h-4 text-[var(--accent)]" />
-                Instagram Crop Ratio
-              </label>
-              <div className="flex gap-2">
-                {cropRatios.map(({ key, label }) => (
-                  <button
-                    key={key}
-                    onClick={() => setCropRatio(cropRatio === key ? undefined : key)}
-                    className={`
-                      px-4 py-2 rounded-xl text-sm font-medium transition-all
-                      ${
-                        cropRatio === key
-                          ? "bg-[var(--accent)] text-black"
-                          : "bg-[var(--glass-bg-hover)] text-[var(--text-muted)] hover:text-[var(--text-secondary)] border border-[var(--glass-border)]"
-                      }
-                    `}
-                  >
-                    {label}
-                  </button>
-                ))}
+            {item.type === "photo" && (
+              <div className="glass-card-static p-4">
+                <label className="flex items-center gap-2 text-sm font-medium text-[var(--text-default)] mb-3">
+                  <Crop className="w-4 h-4 text-[var(--accent)]" />
+                  Instagram Crop Ratio
+                </label>
+                <div className="flex gap-2">
+                  {cropRatios.map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setCropRatio(cropRatio === key ? undefined : key)}
+                      className={`
+                        px-4 py-2 rounded-xl text-sm font-medium transition-all
+                        ${
+                          cropRatio === key
+                            ? "bg-[var(--accent)] text-black"
+                            : "bg-[var(--glass-bg-hover)] text-[var(--text-muted)] hover:text-[var(--text-secondary)] border border-[var(--glass-border)]"
+                        }
+                      `}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Post type */}
             <div className="glass-card-static p-4">
@@ -305,6 +450,16 @@ export default function PostEditor() {
                 <Check className="w-4 h-4" />
                 {item.isReady ? "Unmark Ready" : "Mark as Ready"}
               </button>
+              {hasFile && (
+                <button
+                  onClick={handleDownload}
+                  className="flex items-center gap-1.5 px-4 py-3 rounded-xl text-xs font-medium
+                    glass-card-static text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] transition-all"
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </button>
+              )}
               <button
                 onClick={() => {
                   save();

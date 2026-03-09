@@ -3,9 +3,17 @@ export type Orientation = "portrait" | "landscape" | "square";
 export type PostType = "feed" | "story" | "reel" | "carousel";
 export type CropRatio = "1:1" | "4:5" | "16:9" | "9:16";
 
+export interface CropData {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  unit: "px" | "%";
+}
+
 export interface MediaItem {
   id: string;
-  file: File;
+  file?: File;
   name: string;
   size: number;
   type: MediaType;
@@ -14,10 +22,12 @@ export interface MediaItem {
   height: number;
   orientation: Orientation;
   thumbnailUrl: string;
-  objectUrl: string;
+  objectUrl?: string;
+  needsReimport?: boolean;
   // Post preparation
   postType?: PostType;
   cropRatio?: CropRatio;
+  cropData?: CropData;
   caption?: string;
   hashtags?: string;
   isReady: boolean;
