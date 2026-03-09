@@ -1,13 +1,17 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import {
   Search,
   ArrowUpDown,
   LayoutGrid,
   List,
+  CalendarDays,
 } from "lucide-react";
 import { useMediaStore } from "@/store/mediaStore";
 import { SortField } from "@/types/media";
+import { getDatesWithMedia } from "@/utils/timelineGrouping";
+import CalendarPicker from "./CalendarPicker";
 
 const sortOptions: { key: SortField; label: string }[] = [
   { key: "date", label: "Date" },
@@ -16,7 +20,12 @@ const sortOptions: { key: SortField; label: string }[] = [
   { key: "type", label: "Type" },
 ];
 
-export default function FilterBar() {
+interface FilterBarProps {
+  calendarDate: string | null;
+  onCalendarDateChange: (date: string | null) => void;
+}
+
+export default function FilterBar({ calendarDate, onCalendarDateChange }: FilterBarProps) {
   const {
     searchQuery,
     setSearchQuery,
@@ -26,7 +35,25 @@ export default function FilterBar() {
     toggleSortDirection,
     viewMode,
     setViewMode,
+    items,
   } = useMediaStore();
+
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const calendarRef = useRef<HTMLDivElement>(null);
+
+  const datesWithMedia = getDatesWithMedia(items);
+
+  // Close calendar on outside click
+  useEffect(() => {
+    if (!calendarOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (calendarRef.current && !calendarRef.current.contains(e.target as Node)) {
+        setCalendarOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [calendarOpen]);
 
   return (
     <div className="flex items-center gap-3">
@@ -44,6 +71,38 @@ export default function FilterBar() {
             transition-all glass-card-static"
           style={{ background: "var(--glass-bg)" }}
           aria-label="Filter files by name"
+        />
+      </div>
+
+      {/* Calendar picker */}
+      <div className="relative" ref={calendarRef}>
+        <button
+          onClick={() => setCalendarOpen(!calendarOpen)}
+          className={`p-2 rounded-xl glass-card-static transition-all ${
+            calendarDate
+              ? "!border-[var(--accent)] text-[var(--accent)]"
+              : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+          }`}
+          title="Filter by date"
+          aria-label="Calendar filter"
+        >
+          <CalendarDays className="w-4 h-4" />
+        </button>
+        {calendarDate && (
+          <span
+            className="absolute -top-1 -right-1 w-2 h-2 rounded-full"
+            style={{ background: "var(--accent)" }}
+          />
+        )}
+        <CalendarPicker
+          isOpen={calendarOpen}
+          onClose={() => setCalendarOpen(false)}
+          datesWithMedia={datesWithMedia}
+          onSelectDate={(date) => {
+            onCalendarDateChange(date);
+            if (date) setCalendarOpen(false);
+          }}
+          selectedDate={calendarDate}
         />
       </div>
 

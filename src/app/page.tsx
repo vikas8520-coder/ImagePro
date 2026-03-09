@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Camera, Sparkles, Zap } from "lucide-react";
 import { useMediaStore } from "@/store/mediaStore";
@@ -16,6 +17,7 @@ import BatchEditor from "@/components/BatchEditor";
 
 export default function Home() {
   const { items, editingId } = useMediaStore();
+  const [calendarDate, setCalendarDate] = useState<string | null>(null);
   const hasMedia = items.length > 0;
 
   return (
@@ -113,8 +115,8 @@ export default function Home() {
             <div className="space-y-5">
               {/* B4: Next action suggestion */}
               <NextAction />
-              <FilterBar />
-              <MediaGrid />
+              <FilterBar calendarDate={calendarDate} onCalendarDateChange={setCalendarDate} />
+              <MediaGrid calendarDate={calendarDate} />
             </div>
           )}
         </main>
