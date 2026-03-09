@@ -46,7 +46,7 @@ export default function Header() {
     try {
       await exportAsZip(readyItems);
       toast.success(`Exported ${readyItems.length} files as ZIP`, { id: toastId });
-    } catch (err) {
+    } catch {
       toast.error("Export failed. Please try again.", { id: toastId });
     } finally {
       setIsExporting(false);

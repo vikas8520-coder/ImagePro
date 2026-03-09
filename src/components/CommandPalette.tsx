@@ -14,7 +14,6 @@ import {
   Square,
   Download,
   Trash2,
-  Upload,
   LayoutGrid,
   List,
 } from "lucide-react";

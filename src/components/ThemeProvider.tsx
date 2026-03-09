@@ -18,21 +18,22 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
+function getStoredTheme(): Theme {
+  if (typeof window === "undefined") return "dark";
+  const stored = localStorage.getItem("imagepro-theme");
+  return stored === "light" ? "light" : "dark";
+}
+
 export default function ThemeProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>(getStoredTheme);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    const stored = localStorage.getItem("imagepro-theme") as Theme | null;
-    if (stored === "light" || stored === "dark") {
-      setTheme(stored);
-    }
-    setMounted(true);
-  }, []);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!mounted) return;

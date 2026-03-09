@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Sparkles, Camera } from "lucide-react";
+import { Upload, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useMediaStore } from "@/store/mediaStore";
 import { processFiles } from "@/utils/mediaProcessing";

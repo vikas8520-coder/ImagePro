@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface CalendarPickerProps {
   isOpen: boolean;
-  onClose: () => void;
   datesWithMedia: Set<string>;
   onSelectDate: (date: string | null) => void;
   selectedDate: string | null;
@@ -16,7 +15,6 @@ const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 export default function CalendarPicker({
   isOpen,
-  onClose,
   datesWithMedia,
   onSelectDate,
   selectedDate,

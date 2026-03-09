@@ -32,23 +32,21 @@ export default function BatchEditor() {
   const [applyCaption, setApplyCaption] = useState(false);
   const [applyHashtags, setApplyHashtags] = useState(false);
 
+  const handleOpen = () => {
+    setPostType(undefined);
+    setCropRatio(undefined);
+    setCaption("");
+    setHashtags("");
+    setApplyCaption(false);
+    setApplyHashtags(false);
+    setIsOpen(true);
+  };
+
   useEffect(() => {
-    const handler = () => setIsOpen(true);
+    const handler = () => handleOpen();
     window.addEventListener("open-batch-editor", handler);
     return () => window.removeEventListener("open-batch-editor", handler);
   }, []);
-
-  // Reset when closed
-  useEffect(() => {
-    if (!isOpen) {
-      setPostType(undefined);
-      setCropRatio(undefined);
-      setCaption("");
-      setHashtags("");
-      setApplyCaption(false);
-      setApplyHashtags(false);
-    }
-  }, [isOpen]);
 
   if (!isOpen || selectedIds.size === 0) return null;
 

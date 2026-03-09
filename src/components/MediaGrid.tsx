@@ -150,13 +150,10 @@ interface DaySectionProps {
 }
 
 function DaySection({ day, viewMode, selectedIds, collapsedEvents, toggleEvent, dayRefs }: DaySectionProps) {
-  const setRef = useCallback(
-    (el: HTMLDivElement | null) => {
-      if (el) dayRefs.current.set(day.date, el);
-      else dayRefs.current.delete(day.date);
-    },
-    [day.date, dayRefs]
-  );
+  const setRef = (el: HTMLDivElement | null) => {
+    if (el) dayRefs.current.set(day.date, el);
+    else dayRefs.current.delete(day.date);
+  };
 
   const hasMultipleEvents = day.events.length > 1;
 

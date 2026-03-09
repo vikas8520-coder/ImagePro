@@ -6,8 +6,6 @@ import {
   SortField,
   SortDirection,
   ViewMode,
-  PostType,
-  CropRatio,
 } from "@/types/media";
 
 interface MediaStore {
@@ -286,6 +284,7 @@ export const useMediaStore = create<MediaStore>()(
       name: "imagepro-media-store",
       version: 1,
       partialize: (state) => ({
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         items: state.items.map(({ file, objectUrl, ...rest }) => ({
           ...rest,
           needsReimport: true,

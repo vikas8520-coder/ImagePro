@@ -67,13 +67,19 @@ export default function PostEditor() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape" && editingId) {
-        save();
+        // Save inline to avoid declaration order issue
+        const cropData = completedCrop
+          ? { x: completedCrop.x, y: completedCrop.y, width: completedCrop.width, height: completedCrop.height, unit: "%" as const }
+          : crop
+          ? { x: crop.x, y: crop.y, width: crop.width, height: crop.height, unit: crop.unit }
+          : undefined;
+        updateItem(editingId, { caption, hashtags, postType, cropRatio, cropData });
         setEditingId(null);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [editingId, caption, hashtags, postType, cropRatio, completedCrop]);
+  }, [editingId, caption, hashtags, postType, cropRatio, completedCrop, crop, updateItem, setEditingId]);
 
   const onImageLoad = useCallback(
     (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -98,7 +104,6 @@ export default function PostEditor() {
     [cropRatio]
   );
 
-  // When crop ratio changes, recalculate crop
   useEffect(() => {
     if (!imgRef.current || !cropRatio) {
       if (!cropRatio) setCrop(undefined);

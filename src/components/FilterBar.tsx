@@ -96,7 +96,6 @@ export default function FilterBar({ calendarDate, onCalendarDateChange }: Filter
         )}
         <CalendarPicker
           isOpen={calendarOpen}
-          onClose={() => setCalendarOpen(false)}
           datesWithMedia={datesWithMedia}
           onSelectDate={(date) => {
             onCalendarDateChange(date);
