@@ -15,10 +15,34 @@ async function ensureTable(sql: NeonQueryFunction<false, false>) {
       type VARCHAR(20) NOT NULL DEFAULT 'general',
       message TEXT NOT NULL,
       rating INTEGER DEFAULT 0,
+      priority VARCHAR(4),
+      sentiment VARCHAR(20),
+      component VARCHAR(64),
+      ai_response TEXT,
+      ai_summary TEXT,
+      github_issue_url TEXT,
+      status VARCHAR(20) DEFAULT 'new',
       user_agent TEXT,
       created_at TIMESTAMP DEFAULT NOW()
     )
   `;
+  // Add columns if table already exists (idempotent)
+  const cols = [
+    "priority VARCHAR(4)",
+    "sentiment VARCHAR(20)",
+    "component VARCHAR(64)",
+    "ai_response TEXT",
+    "ai_summary TEXT",
+    "github_issue_url TEXT",
+    "status VARCHAR(20) DEFAULT 'new'",
+  ];
+  for (const col of cols) {
+    const name = col.split(" ")[0];
+    try {
+      const raw = `ALTER TABLE feedback ADD COLUMN IF NOT EXISTS ${col}`;
+      await sql(raw as unknown as TemplateStringsArray);
+    } catch {}
+  }
 }
 
 // GET — fetch all feedback

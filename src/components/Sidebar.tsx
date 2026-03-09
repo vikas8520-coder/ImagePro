@@ -18,7 +18,7 @@ import {
   Moon,
   MessageCircle,
 } from "lucide-react";
-import FeedbackPanel from "./FeedbackPanel";
+import FeedbackChat from "./FeedbackChat";
 import { useMediaStore } from "@/store/mediaStore";
 import { useTheme } from "@/components/ThemeProvider";
 import { FilterTab } from "@/types/media";
@@ -262,7 +262,7 @@ export default function Sidebar() {
         </button>
       </div>
 
-      <FeedbackPanel isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      <FeedbackChat isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </nav>
   );
 }
