@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import {
   Camera,
   Layers,
@@ -15,7 +16,9 @@ import {
   ChevronRight,
   Sun,
   Moon,
+  MessageCircle,
 } from "lucide-react";
+import FeedbackPanel from "./FeedbackPanel";
 import { useMediaStore } from "@/store/mediaStore";
 import { useTheme } from "@/components/ThemeProvider";
 import { FilterTab } from "@/types/media";
@@ -36,6 +39,7 @@ const navItems: {
 ];
 
 export default function Sidebar() {
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const collapsed = useMediaStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useMediaStore((s) => s.toggleSidebar);
@@ -181,6 +185,32 @@ export default function Sidebar() {
 
       {/* Bottom controls */}
       <div className="border-t border-[var(--glass-border)] p-2 space-y-1">
+        {/* Feedback */}
+        <button
+          onClick={() => setFeedbackOpen(true)}
+          className={`
+            w-full flex items-center gap-2 rounded-lg transition-all duration-200
+            text-[var(--text-faint)] hover:text-[var(--text-muted)] hover:bg-[var(--glass-bg-hover)]
+            ${collapsed ? "justify-center h-9" : "px-3 h-8"}
+          `}
+          aria-label="Send feedback"
+          title={collapsed ? "Feedback" : undefined}
+        >
+          <MessageCircle className="w-4 h-4 flex-shrink-0" />
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                className="text-[11px] whitespace-nowrap overflow-hidden"
+              >
+                Feedback
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </button>
+
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
@@ -231,6 +261,8 @@ export default function Sidebar() {
           )}
         </button>
       </div>
+
+      <FeedbackPanel isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </nav>
   );
 }
